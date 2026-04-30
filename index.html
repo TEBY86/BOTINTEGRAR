@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freework | Factibilidad Entel</title>
+    <title>Freework | Factibilidad Entel Integrado</title>
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    
     <style>
+        /* =========================================================
+           1. VARIABLES GLOBALES
+           ========================================================= */
         :root {
             --primary: #d12fd3; 
             --primary-gradient: linear-gradient(135deg, #b537f2 0%, #f02aa6 100%);
             --primary-glow: rgba(209, 47, 211, 0.2);
+            --fw-btn-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            --fw-btn-glow: rgba(59, 130, 246, 0.4);
             --success: #00f298;
             --success-bg: rgba(0, 242, 152, 0.1);
             --warning: #ffb800;
@@ -30,860 +36,734 @@
 
         body {
             font-family: 'DM Sans', sans-serif;
-            background: var(--bg);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: #f4f4f5;
+            min-height: 200vh;
             color: var(--text);
             overflow-x: hidden;
-            position: relative;
             -webkit-font-smoothing: antialiased;
         }
 
-        body::before {
-            content: '';
+        /* =========================================================
+           2. BOTÓN FLOTANTE
+           ========================================================= */
+        #fw-floating-btn {
             position: fixed;
-            top: -20%;
-            right: -10%;
-            width: 60%;
-            height: 60%;
-            background: radial-gradient(circle, rgba(181, 55, 242, 0.12) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+            bottom: 40px;
+            right: 40px;
+            width: 65px;
+            height: 65px;
+            border-radius: 35px;
+            background: var(--fw-btn-gradient);
+            box-shadow: 0 8px 32px var(--fw-btn-glow);
+            cursor: pointer;
+            z-index: 9000;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease;
+            user-select: none;
+            touch-action: none;
+            font-family: 'Syne', sans-serif;
         }
 
-        body::after {
-            content: '';
-            position: fixed;
-            bottom: -10%;
-            left: -10%;
-            width: 50%;
-            height: 50%;
-            background: radial-gradient(circle, rgba(240, 42, 166, 0.08) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: 0;
+        #fw-floating-btn:hover:not(.dragging) { width: 230px; box-shadow: 0 12px 40px var(--fw-btn-glow); }
+        #fw-floating-btn:active { transform: scale(0.95); }
+        #fw-floating-btn.dragging { transition: none !important; transform: scale(1.05); cursor: grabbing; }
+
+        .fw-icon-wrapper {
+            min-width: 65px; height: 65px;
+            display: flex; justify-content: center; align-items: center;
+            color: white; flex-shrink: 0; pointer-events: none;
         }
 
-        .noise {
-            position: fixed;
-            inset: 0;
-            opacity: 0.03;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: 0;
+        .fw-text {
+            color: white; font-weight: 700; font-size: 0.95rem;
+            white-space: nowrap; opacity: 0; transform: translateX(-10px);
+            transition: all 0.3s ease; pointer-events: none;
         }
 
-        .container {
+        #fw-floating-btn:hover:not(.dragging) .fw-text {
+            opacity: 1; transform: translateX(0); transition-delay: 0.1s;
+        }
+
+        /* =========================================================
+           3. MODAL CONTENEDOR
+           ========================================================= */
+        #fw-modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(7, 5, 10, 0.85);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center;
+            z-index: 9998; opacity: 0; transition: opacity 0.3s ease;
+        }
+
+        #fw-modal-overlay.active { display: flex; opacity: 1; }
+
+        #fw-close-btn {
+            position: absolute; top: 25px; right: 25px;
+            background: rgba(255, 255, 255, 0.1); border: 1px solid var(--border);
+            color: #fff; width: 45px; height: 45px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: all 0.3s ease; z-index: 10000;
+        }
+
+        #fw-close-btn:hover { background: rgba(255, 255, 255, 0.2); transform: rotate(90deg) scale(1.1); }
+
+        .fw-app-container {
             position: relative;
-            z-index: 1;
-            width: 92%;
-            max-width: 440px;
-            padding: 40px;
             background: var(--surface);
+            width: 92%; max-width: 440px;
+            max-height: 90vh;
+            padding: 35px;
             border: 1px solid var(--border);
             border-radius: 28px; 
             box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8);
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 35px;
-        }
-
-        .logo {
-            font-family: 'Syne', sans-serif;
-            font-weight: 700;
-            font-size: 1.15rem;
-            letter-spacing: 0.2px;
-            color: var(--text);
-        }
-        .logo em {
-            font-style: normal;
-            color: var(--primary);
-            font-weight: 800;
-            filter: drop-shadow(0 0 8px var(--primary-glow));
-        }
-
-        .badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 5px 12px;
-            border-radius: 100px;
-            font-size: 0.62rem;
-            font-weight: 700;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--border);
-            color: var(--text-2);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-        .badge-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-            animation: pulse 2.5s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.85); }
-        }
-
-        h1 {
-            font-family: 'Syne', sans-serif;
-            font-size: 2.1rem;
-            font-weight: 700;
-            letter-spacing: -0.2px;
-            line-height: 1.15;
-            margin-bottom: 12px;
-            color: #fff;
-        }
-
-        .subtitle {
-            font-size: 0.9rem;
-            color: var(--text-2);
-            line-height: 1.6;
-            margin-bottom: 24px;
-            font-weight: 400;
-        }
-
-        /* Tabs Selector */
-        .tabs-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 12px;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            color: var(--text-2);
-            font-family: 'Syne', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .tab-btn.active {
-            background: var(--primary-gradient);
-            color: #fff;
-            border-color: transparent;
-            box-shadow: 0 4px 15px rgba(209, 47, 211, 0.2);
-        }
-
-        .tab-btn:hover:not(.active) {
-            border-color: var(--border-hover);
-            color: #fff;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .input-row {
-            display: flex;
-            flex-direction: column; 
-            gap: 15px;
-        }
-
-        .input-wrap {
-            position: relative;
-        }
-
-        .input-wrap svg {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-3);
-            pointer-events: none;
-            transition: all 0.3s;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 18px 20px 18px 52px;
-            background: var(--surface-2);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 0.95rem;
-            color: var(--text);
-            outline: none;
-            transition: all 0.3s ease;
-        }
-        input[type="text"]::placeholder { color: var(--text-3); }
-        input[type="text"]:focus {
-            border-color: var(--primary);
-            background: #1d1930;
-            box-shadow: 0 0 0 3px var(--primary-glow);
-        }
-
-        button.main-btn {
-            width: 100%;
-            height: 56px;
-            background: var(--primary-gradient);
-            color: #fff;
-            border: none;
-            border-radius: 18px;
-            font-family: 'Syne', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 20px rgba(181, 55, 242, 0.2);
-        }
-        button.main-btn:hover {
-            transform: translateY(-2px);
-            filter: brightness(1.1);
-            box-shadow: 0 15px 30px rgba(240, 42, 166, 0.3);
-        }
-        button.main-btn:disabled {
-            background: var(--surface-2);
-            color: var(--text-3);
-            box-shadow: none;
-            transform: none;
-            cursor: not-allowed;
-        }
-
-        button#clearBtn {
-            width: 100%;
-            height: 48px;
-            background: transparent;
-            color: var(--text-2);
-            border: 1px solid var(--border);
-            border-radius: 18px;
-            font-family: 'Syne', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: none; 
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
-            margin-top: 10px;
-        }
-        button#clearBtn:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            border-color: var(--text-3);
-        }
-        button#clearBtn.active {
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-
-        /* Activity Panel */
-        .log-section {
-            margin-top: 30px;
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .log-section.active { display: block; }
-
-        .log-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-2);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            position: relative;
-        }
-        .progress-bar {
-            height: 100%;
-            width: 40%;
-            background: var(--primary-gradient);
-            border-radius: 10px;
-            box-shadow: 0 0 15px var(--primary-glow);
-            animation: progressMove 1.8s infinite cubic-bezier(0.445, 0.05, 0.55, 0.95);
-            position: absolute;
-        }
-
-        @keyframes progressMove {
-            0% { left: -40%; }
-            100% { left: 100%; }
-        }
-
-        .status-feed {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 18px;
-            max-height: 160px;
+            transform: translateY(30px);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            scroll-behavior: smooth;
         }
         
+        .fw-app-container::-webkit-scrollbar { width: 6px; }
+        .fw-app-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        #fw-modal-overlay.active .fw-app-container { transform: translateY(0); }
+
+        /* =========================================================
+           4. APP INTERIOR
+           ========================================================= */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .logo { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.15rem; color: var(--text); }
+        .logo em { font-style: normal; color: var(--primary); font-weight: 800; filter: drop-shadow(0 0 8px var(--primary-glow)); }
+        .badge { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px; font-size: 0.62rem; font-weight: 700; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: var(--text-2); text-transform: uppercase; }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulse 2.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.85); } }
+
+        h1 { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; margin-bottom: 10px; color: #fff; }
+        .subtitle { font-size: 0.9rem; color: var(--text-2); line-height: 1.5; margin-bottom: 25px; }
+
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 25px; }
+        .tab-btn { flex: 1; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; color: var(--text-2); font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .tab-btn.active { background: var(--primary-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 15px rgba(209, 47, 211, 0.2); }
+        .tab-btn:hover:not(.active) { border-color: var(--border-hover); color: #fff; background: rgba(255, 255, 255, 0.05); }
+
+        .input-row { display: flex; flex-direction: column; gap: 15px; }
+        .input-wrap { position: relative; }
+        .input-wrap svg { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-3); pointer-events: none; }
+        
+        .fw-app-container input[type="text"] { width: 100%; padding: 18px 20px 18px 52px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 18px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; color: var(--text); outline: none; transition: all 0.3s ease; }
+        .fw-app-container input[type="text"]::placeholder { color: var(--text-3); }
+        .fw-app-container input[type="text"]:focus { border-color: var(--primary); background: #1d1930; box-shadow: 0 0 0 3px var(--primary-glow); }
+
+        button.main-btn { width: 100%; height: 56px; background: var(--primary-gradient); color: #fff; border: none; border-radius: 18px; font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s; box-shadow: 0 10px 20px rgba(181, 55, 242, 0.2); }
+        button.main-btn:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 15px 30px rgba(240, 42, 166, 0.3); }
+        button.main-btn:disabled { background: var(--surface-2); color: var(--text-3); box-shadow: none; transform: none; cursor: not-allowed; }
+
+        #clearBtn { width: 100%; height: 48px; background: transparent; color: var(--text-2); border: 1px solid var(--border); border-radius: 18px; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 600; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; transition: all 0.2s; }
+        #clearBtn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; border-color: var(--text-3); }
+        #clearBtn.active { display: flex; animation: fadeIn 0.3s ease; }
+
+        .log-section { margin-top: 30px; display: none; animation: fadeIn 0.4s ease; }
+        .log-section.active { display: block; }
+        .log-label { font-size: 0.75rem; font-weight: 600; color: var(--text-2); margin-bottom: 15px; display: flex; justify-content: space-between; }
+        
+        .progress-container { width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden; margin-bottom: 20px; position: relative; }
+        .progress-bar { height: 100%; width: 40%; background: var(--primary-gradient); border-radius: 10px; box-shadow: 0 0 15px var(--primary-glow); animation: progressMove 1.8s infinite cubic-bezier(0.445, 0.05, 0.55, 0.95); position: absolute; }
+        @keyframes progressMove { 0% { left: -40%; } 100% { left: 100%; } }
+
+        .status-feed { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 20px; padding: 18px; max-height: 160px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; scroll-behavior: smooth; }
         .status-feed::-webkit-scrollbar { width: 4px; }
-        .status-feed::-webkit-scrollbar-track { background: transparent; }
         .status-feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        .status-item { font-size: 0.88rem; line-height: 1.4; color: var(--text-2); display: flex; align-items: flex-start; gap: 10px; animation: itemSlide 0.3s ease forwards; }
+        .status-item i { margin-top: 4px; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--primary); box-shadow: 0 0 5px var(--primary-glow); }
+        .status-item.ok { color: var(--success); } .status-item.ok i { background: var(--success); box-shadow: 0 0 5px var(--success); }
+        .status-item.warn { color: var(--warning); } .status-item.warn i { background: var(--warning); box-shadow: 0 0 5px var(--warning); }
+        .status-item.err { color: var(--error); } .status-item.err i { background: var(--error); box-shadow: 0 0 5px var(--error); }
 
-        .status-item {
-            font-size: 0.88rem;
-            line-height: 1.4;
-            color: var(--text-2);
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            animation: itemSlide 0.3s ease forwards;
-        }
-
-        .status-item i {
-            margin-top: 4px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--primary);
-            flex-shrink: 0;
-            box-shadow: 0 0 5px var(--primary-glow);
-        }
-
-        .status-item.ok { color: var(--success); }
-        .status-item.ok i { background: var(--success); box-shadow: 0 0 5px var(--success); }
-        .status-item.warn { color: var(--warning); }
-        .status-item.warn i { background: var(--warning); box-shadow: 0 0 5px var(--warning); }
-        .status-item.err { color: var(--error); }
-        .status-item.err i { background: var(--error); box-shadow: 0 0 5px var(--error); }
-
-        @keyframes itemSlide {
-            from { opacity: 0; transform: translateX(-5px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Result */
         .result-section { margin-top: 25px; display: none; }
         .result-section.active { display: block; }
-
-        .result-card {
-            border-radius: 24px;
-            padding: 24px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.02);
-            backdrop-filter: blur(5px);
-        }
+        .result-card { border-radius: 24px; padding: 24px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); }
         .result-card.success { background: var(--success-bg); border-color: rgba(0, 242, 152, 0.15); }
         .result-card.warning { background: var(--warning-bg); border-color: rgba(255, 184, 0, 0.15); }
         .result-card.error   { background: var(--error-bg);   border-color: rgba(255, 75, 129, 0.15); }
-
-        .result-title { 
-            font-family: 'Syne', sans-serif; 
-            font-size: 1.05rem; 
-            font-weight: 700; 
-            margin-bottom: 8px;
-        }
+        .result-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .result-title { font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700; }
         .result-body { font-size: 0.9rem; line-height: 1.5; color: var(--text-2); white-space: pre-line; }
         .result-img { margin-top: 15px; width: 100%; border-radius: 16px; border: 1px solid var(--border); display: none; }
 
-        .spinner {
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255,255,255,0.25);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            display: none;
-        }
+        .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.25); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes itemSlide { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        footer {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-            border-top: 1px solid var(--border);
-            padding-top: 25px;
-        }
+        footer { margin-top: 30px; display: flex; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 20px; }
         footer span { font-size: 0.68rem; color: var(--text-3); font-weight: 600; letter-spacing: 0.5px; }
 
+        /* =========================================================
+           5. CUSTOM PROMPT MODAL (Para pedir ID)
+           ========================================================= */
+        #customPromptOverlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.85); 
+            z-index: 10005;
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        #customPromptOverlay.active { display: flex; }
+
+        .custom-prompt-box {
+            background: var(--surface); padding: 30px; border-radius: 20px; 
+            border: 1px solid var(--primary); text-align: center; width: 85%; max-width: 320px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .custom-prompt-box h3 { margin-bottom: 10px; font-family: 'Syne', sans-serif; font-size: 1rem; }
+        .custom-prompt-box p { font-size: 0.85rem; color: var(--text-2); margin-bottom: 20px; }
+        .custom-prompt-box input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            border-radius: 12px; border: 1px solid var(--border);
+            background: var(--surface-2); color: white; outline: none;
+            text-align: center; font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+        .custom-prompt-box input:focus { border-color: var(--primary); }
+        .custom-prompt-box .main-btn { height: 46px; border-radius: 12px; }
+
         @media (max-width: 480px) {
-            .container { padding: 35px 25px; }
-            h1 { font-size: 1.7rem; }
+            .fw-app-container { width: 100%; height: 100vh; max-height: none; border-radius: 0; border: none; padding: 25px; }
+            #fw-floating-btn { bottom: 20px; right: 20px; }
+            #fw-close-btn { top: 15px; right: 15px; background: rgba(0,0,0,0.6); border: none; }
         }
     </style>
 </head>
 <body>
-<div class="noise"></div>
 
-<div class="container">
-    <header>
-        <div class="logo">Free<em>work</em>Bot</div>
-        <div class="badge">
-            <span class="badge-dot"></span>
-            Conectado
-        </div>
-    </header>
-
-    <h1>Validación</h1>
-    <p class="subtitle">Consulta factibilidad técnica o evaluación de RUT de forma automatizada.</p>
-
-    <!-- Selector de modo -->
-    <div class="tabs-container">
-        <button id="tabDireccion" class="tab-btn active" onclick="cambiarModo('direccion')">
-            📍 Dirección
-        </button>
-        <button id="tabRut" class="tab-btn" onclick="cambiarModo('rut')">
-            🪪 RUT
-        </button>
-    </div>
-
-    <!-- Panel Dirección -->
-    <div id="panelDireccion" class="input-row">
-        <div class="input-wrap">
-            <input type="text" id="addressInput"
-                placeholder="Calle, Número, Comuna"
-                autocomplete="off" spellcheck="false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+    <!-- =========================================================
+         BOTÓN FLOTANTE
+         ========================================================= -->
+    <div id="fw-floating-btn" title="Consultar Factibilidad">
+        <div class="fw-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
             </svg>
         </div>
-        <button id="searchBtn" class="main-btn" onclick="iniciarConsulta()">
-            <span class="btn-text">Verificar Cobertura</span>
-            <div class="spinner" id="spinner"></div>
+        <div class="fw-text">Validar Factibilidad</div>
+    </div>
+
+    <!-- =========================================================
+         MODAL CONTENEDOR
+         ========================================================= -->
+    <div id="fw-modal-overlay">
+        <button id="fw-close-btn" title="Cerrar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
         </button>
-    </div>
 
-    <!-- Panel RUT -->
-    <div id="panelRut" class="input-row" style="display: none;">
-        <div class="input-wrap">
-            <input type="text" id="rutInput"
-                placeholder="12.345.678-9"
-                autocomplete="off" spellcheck="false">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-            </svg>
-        </div>
-        <button id="rutSearchBtn" class="main-btn" onclick="consultarRut()">
-            <span class="btn-text-rut">Verificar RUT</span>
-            <div class="spinner" id="rutSpinner"></div>
-        </button>
-    </div>
+        <div class="fw-app-container">
+            <header>
+                <div class="logo">Free<em>work</em>Bot</div>
+                <div class="badge"><span class="badge-dot"></span>Conectado</div>
+            </header>
 
-    <button id="clearBtn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        Nueva Consulta
-    </button>
+            <h1>Validación</h1>
+            <p class="subtitle">Consulta factibilidad técnica o evaluación de RUT de forma automatizada.</p>
 
-    <!-- Panel de Actividad -->
-    <div class="log-section" id="logSection">
-        <div class="log-label">
-            <span>Estado del proceso</span>
-            <span id="statusPercent">Analizando...</span>
-        </div>
-        
-        <div class="progress-container" id="loadingBar">
-            <div class="progress-bar"></div>
-        </div>
-
-        <div class="status-feed" id="logStream"></div>
-    </div>
-
-    <!-- Resultados -->
-    <div class="result-section" id="resultSection">
-        <div class="result-card" id="resultCard">
-            <div class="result-head">
-                <span class="result-icon" id="resultIcon">✅</span>
-                <span class="result-title" id="resultTitle">Resultado</span>
+            <div class="tabs-container">
+                <button id="tabDireccion" class="tab-btn active" onclick="cambiarModo('direccion')">📍 Dirección</button>
+                <button id="tabRut" class="tab-btn" onclick="cambiarModo('rut')">🪪 RUT</button>
             </div>
-            <div class="result-body" id="resultBody"></div>
-            <img id="resultImg" class="result-img" alt="Evidencia">
+
+            <!-- Panel Dirección -->
+            <div id="panelDireccion" class="input-row">
+                <div class="input-wrap">
+                    <input type="text" id="addressInput" placeholder="Calle, Número, Comuna" autocomplete="off" spellcheck="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </div>
+                <button id="searchBtn" class="main-btn" onclick="iniciarConsulta()">
+                    <span class="btn-text">Verificar Cobertura</span>
+                    <div class="spinner" id="spinner"></div>
+                </button>
+            </div>
+
+            <!-- Panel RUT -->
+            <div id="panelRut" class="input-row" style="display: none;">
+                <div class="input-wrap">
+                    <input type="text" id="rutInput" placeholder="12.345.678-9" autocomplete="off" spellcheck="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <button id="rutSearchBtn" class="main-btn" onclick="consultarRut()">
+                    <span class="btn-text-rut">Verificar RUT</span>
+                    <div class="spinner" id="rutSpinner"></div>
+                </button>
+            </div>
+
+            <button id="clearBtn" onclick="limpiarPantalla()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Nueva Consulta
+            </button>
+
+            <!-- Logs -->
+            <div class="log-section" id="logSection">
+                <div class="log-label">
+                    <span>Estado del proceso</span>
+                    <span id="statusPercent">Analizando...</span>
+                </div>
+                <div class="progress-container" id="loadingBar"><div class="progress-bar"></div></div>
+                <div class="status-feed" id="logStream"></div>
+            </div>
+
+            <!-- Resultados -->
+            <div class="result-section" id="resultSection">
+                <div class="result-card" id="resultCard">
+                    <div class="result-head">
+                        <span class="result-icon" id="resultIcon">✅</span>
+                        <span class="result-title" id="resultTitle">Resultado</span>
+                    </div>
+                    <div class="result-body" id="resultBody"></div>
+                    <img id="resultImg" class="result-img" alt="Evidencia">
+                </div>
+            </div>
+
+            <footer>
+                <span>FREEOPS © 2026</span>
+                <span style="color: var(--primary); font-weight: 700;">ACTIVE ENGINE</span>
+            </footer>
         </div>
     </div>
 
-    <footer>
-        <span>FREEOPS © 2026</span>
-        <span class="server-url" id="serverUrlDisplay" style="color: var(--primary); font-weight: 700;">ACTIVE ENGINE</span>
-    </footer>
-</div>
+    <!-- =========================================================
+         MODAL CUSTOM PROMPT (Pedir ID — reemplaza al prompt() nativo)
+         ========================================================= -->
+    <div id="customPromptOverlay">
+        <div class="custom-prompt-box">
+            <h3>🔐 Ingresa tu ID</h3>
+            <p>Necesitamos validar tu identidad para continuar.</p>
+            <input type="text" id="customPromptInput" placeholder="Tu ID de acceso">
+            <button class="main-btn" onclick="guardarCustomId()">Guardar y Continuar</button>
+        </div>
+    </div>
 
-<script>
-// --- CONFIGURACIÓN ---
-const SERVER_BASE = 'https://botintegrar-production.up.railway.app';
+    <!-- =========================================================
+         SCRIPT UNIFICADO
+         ========================================================= -->
+    <script>
+        // ============================================================
+        // A) LÓGICA DEL BOTÓN FLOTANTE + MODAL
+        // ============================================================
+        const fwBtn     = document.getElementById('fw-floating-btn');
+        const fwOverlay = document.getElementById('fw-modal-overlay');
+        const fwClose   = document.getElementById('fw-close-btn');
+        let fwIsDragging = false, fwStartX, fwStartY, fwBtnX, fwBtnY, fwMoved = false;
 
+        const fwOnStart = (e) => {
+            fwIsDragging = true; fwMoved = false;
+            const t = e.touches ? e.touches[0] : e;
+            fwStartX = t.clientX; fwStartY = t.clientY;
+            const r = fwBtn.getBoundingClientRect();
+            fwBtnX = r.left; fwBtnY = r.top;
+            fwBtn.style.right = 'auto'; fwBtn.style.bottom = 'auto';
+            fwBtn.classList.add('dragging');
+            document.addEventListener('mousemove', fwOnMove);
+            document.addEventListener('mouseup', fwOnEnd);
+            document.addEventListener('touchmove', fwOnMove, { passive: false });
+            document.addEventListener('touchend', fwOnEnd);
+        };
 
-async function verificarPermisoWeb(userId) {
-    const res = await fetch(`${SERVER_BASE}/permisos/${userId}?accion=consultar`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-}
+        const fwOnMove = (e) => {
+            if (!fwIsDragging) return;
+            const t = e.touches ? e.touches[0] : e;
+            const dx = t.clientX - fwStartX, dy = t.clientY - fwStartY;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) { fwMoved = true; e.preventDefault(); }
+            const newLeft = Math.max(0, Math.min(fwBtnX + dx, window.innerWidth - fwBtn.offsetWidth));
+            const newTop  = Math.max(0, Math.min(fwBtnY + dy, window.innerHeight - fwBtn.offsetHeight));
+            fwBtn.style.left = `${newLeft}px`;
+            fwBtn.style.top  = `${newTop}px`;
+        };
 
+        const fwOnEnd = () => {
+            if (!fwIsDragging) return;
+            fwIsDragging = false;
+            fwBtn.classList.remove('dragging');
+            document.removeEventListener('mousemove', fwOnMove);
+            document.removeEventListener('mouseup', fwOnEnd);
+            document.removeEventListener('touchmove', fwOnMove);
+            document.removeEventListener('touchend', fwOnEnd);
+        };
 
-// 3. Obtener ID del usuario
-function obtenerUserId() {
-    let userId = localStorage.getItem('freework_user_id');
-    if (!userId) {
-        userId = prompt('🔐 Ingresa tu ID:');
-        if (userId) localStorage.setItem('freework_user_id', userId);
-    }
-    return userId;
-}
+        fwBtn.addEventListener('mousedown', fwOnStart);
+        fwBtn.addEventListener('touchstart', fwOnStart, { passive: false });
 
-
-
-
-
-
-// --- ELEMENTOS DOM ---
-const panelDireccion = document.getElementById('panelDireccion');
-const panelRut       = document.getElementById('panelRut');
-const tabDireccion   = document.getElementById('tabDireccion');
-const tabRut         = document.getElementById('tabRut');
-
-const addressInput   = document.getElementById('addressInput');
-const rutInput       = document.getElementById('rutInput');
-
-const searchBtn      = document.getElementById('searchBtn');
-const rutSearchBtn   = document.getElementById('rutSearchBtn');
-
-const spinner        = document.getElementById('spinner');
-const rutSpinner     = document.getElementById('rutSpinner');
-
-const logSection     = document.getElementById('logSection');
-const logStream      = document.getElementById('logStream');
-const loadingBar     = document.getElementById('loadingBar');
-const clearBtn       = document.getElementById('clearBtn');
-
-const resultSection  = document.getElementById('resultSection');
-const resultCard     = document.getElementById('resultCard');
-const resultIcon     = document.getElementById('resultIcon');
-const resultTitle    = document.getElementById('resultTitle');
-const resultBody     = document.getElementById('resultBody');
-const resultImg      = document.getElementById('resultImg');
-
-// --- LÓGICA DE INTERFAZ ---
-function cambiarModo(modo) {
-    if (modo === 'direccion') {
-        panelDireccion.style.display = 'flex';
-        panelRut.style.display = 'none';
-        tabDireccion.classList.add('active');
-        tabRut.classList.remove('active');
-    } else {
-        panelDireccion.style.display = 'none';
-        panelRut.style.display = 'flex';
-        tabDireccion.classList.remove('active');
-        tabRut.classList.add('active');
-    }
-    limpiarPantalla();
-}
-
-function addLog(texto, tipo = 'info') {
-    const item = document.createElement('div');
-    const cleanText = texto.replace(/\[.*?\]:?\s?/, '').replace(/^[✅⚠️❌]\s?/, '');
-    item.className = `status-item ${tipo}`;
-    item.innerHTML = `<i></i><span>${cleanText}</span>`;
-    logStream.appendChild(item);
-    logStream.scrollTop = logStream.scrollHeight;
-}
-
-function limpiarPantalla() {
-    addressInput.value = '';
-    rutInput.value = '';
-    logSection.classList.remove('active');
-    resultSection.classList.remove('active');
-    clearBtn.classList.remove('active');
-    logStream.innerHTML = '';
-    resultImg.style.display = 'none';
-    resultImg.src = '';
-}
-
-clearBtn.addEventListener('click', limpiarPantalla);
-
-// --- CONSULTA DIRECCIÓN (SSE) ---
-function iniciarConsulta() {
-    const direccion = addressInput.value.trim();
-    if (!direccion) return addressInput.focus();
-    
-    // 🔐 VERIFICAR PERMISOS (AGREGADO)
-    const userId = obtenerUserId();
-    if (!userId) return;
-    
- // 👇 NUEVO BLOQUE CON CUPOS VISIBLES:
-    verificarPermisoWeb(userId).then(permiso => {
-        if (!permiso.permitido) {
-            logSection.classList.add('active');
-            addLog(`Sin permiso: ${permiso.mensaje}`, 'err');
-            
-            if (permiso.estadisticas) {
-                const s = permiso.estadisticas;
-                renderResult('error', 'Sin acceso',
-                    `Cupo diario: ${s.dia.usadas}/${s.dia.maximo} usadas\n` +
-                    `Restantes hoy: ${s.dia.restantes}\n` +
-                    `Restantes esta semana: ${s.semana.restantes}`
-                );
+        fwBtn.addEventListener('click', () => {
+            if (!fwMoved) {
+                fwOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
             }
-            return;
-        }
-        
-        if (permiso.estadisticas) {
-            const s = permiso.estadisticas;
-            const usado = Number(s.dia.usadas) || 0;
-            const maximo = Math.max(1, Number(s.dia.maximo) || 0);
-            const pct = Math.min(100, Math.round((usado / maximo) * 100));
-            logSection.classList.add('active');
-            addLog(`Cupo hoy: ${s.dia.restantes} restantes (${usado}/${maximo} · ${pct}%)`, 'ok');
-        }
-        
-        continuarConsulta(direccion, userId);
-    }).catch(err => {
-        logSection.classList.add('active');
-        addLog(`Error al verificar permisos: ${err.message}`, 'err');
-    });
-}
-
-    
-   
-
-// Función nueva para el resto de la consulta
-function continuarConsulta(direccion, userId) {
-    // UI Loading
-    searchBtn.disabled = true;
-    spinner.style.display = 'block';
-    document.querySelector('.btn-text').style.display = 'none';
-    logStream.innerHTML = '';
-    logSection.classList.add('active');
-    loadingBar.style.display = 'block';
-    resultSection.classList.remove('active');
-    clearBtn.classList.remove('active');
-    
-    addLog(`Iniciando búsqueda para: ${direccion}`);
-    
-    const url = `${SERVER_BASE}/verificar?direccion=${encodeURIComponent(direccion)}&userId=${userId}`;
-    
-    fetch(`${SERVER_BASE}/health`, { signal: AbortSignal.timeout(3000) })
-        .then(() => {
-            const evtSource = new EventSource(url);
-            let mensajesAcumulados = [];
-
-            evtSource.onmessage = (e) => {
-                const payload = JSON.parse(e.data);
-                
-                if (payload.tipo === 'mensaje') {
-                    mensajesAcumulados.push(payload.texto);
-                    let tipo = 'info';
-                    if (payload.texto.includes('✅')) tipo = 'ok';
-                    if (payload.texto.includes('⚠️')) tipo = 'warn';
-                    if (payload.texto.includes('❌')) tipo = 'err';
-                    addLog(payload.texto, tipo);
-                }
-
-                if (payload.tipo === 'foto' && payload.base64) {
-                    renderResult('success', 'Factibilidad Confirmada', 'Se ha capturado la evidencia de cobertura.', payload.base64);
-                }
-
-                if (payload.tipo === 'fin') {
-                    const finalMsg = mensajesAcumulados.join('\n');
-                    const tipoFinal = finalMsg.includes('✅') ? 'success' : (finalMsg.includes('⚠️') ? 'warning' : 'error');
-                    renderResult(tipoFinal, null, finalMsg);
-                    evtSource.close();
-                    finalizarLoading();
-                }
-
-                if (payload.tipo === 'error') {
-                    addLog(payload.texto, 'err');
-                    renderResult('error', 'Error del Sistema', payload.texto);
-                    evtSource.close();
-                    finalizarLoading();
-                }
-            };
-
-            evtSource.onerror = () => {
-                evtSource.close();
-                finalizarLoading();
-            };
-        })
-        .catch(() => {
-            addLog('No se pudo establecer conexión con el bot local.', 'err');
-            renderResult('error', 'Error de Conexión', 'Asegúrate de que api-server.js esté activo.');
-            finalizarLoading();
         });
-}
 
-  
+        fwClose.onclick = () => {
+            fwOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        };
 
-function finalizarLoading() {
-    searchBtn.disabled = false;
-    spinner.style.display = 'none';
-    document.querySelector('.btn-text').style.display = 'inline';
-    loadingBar.style.display = 'none';
-    clearBtn.classList.add('active');
-}
-
-// --- CONSULTA RUT (POST) ---
-// --- CONSULTA RUT (POST) ---
-function consultarRut() {
-    const rut = rutInput.value.trim();
-    if (!rut) return rutInput.focus();
-    
-    // 🔐 VERIFICAR PERMISOS
-    const userId = obtenerUserId();
-    if (!userId) return;
+        fwOverlay.addEventListener('click', (e) => {
+            if (e.target === fwOverlay) fwClose.click();
+        });
 
 
-    
-    
-    // UI Loading
-    rutSearchBtn.disabled = true;
-    rutSpinner.style.display = 'block';
-    document.querySelector('.btn-text-rut').style.display = 'none';
-    
-    logStream.innerHTML = '';
-    logSection.classList.add('active');
-    loadingBar.style.display = 'block';
-    resultSection.classList.remove('active');
-    clearBtn.classList.remove('active');
-    
-    addLog(`🔐 Verificando permisos...`);
-    
-    // Verificar permisos ANTES de consultar
-    verificarPermisoWeb(userId).then(permiso => {
-        if (!permiso.permitido) {
-            logSection.classList.add('active');
-            addLog(`Sin permiso: ${permiso.mensaje}`, 'err');
-            
-            if (permiso.estadisticas) {
-                const s = permiso.estadisticas;
-                renderResult('error', 'Sin acceso',
-                    `Cupo diario: ${s.dia.usadas}/${s.dia.maximo} usadas\n` +
-                    `Restantes hoy: ${s.dia.restantes}\n` +
-                    `Restantes esta semana: ${s.semana.restantes}`
-                );
-            }
-            finalizarLoadingRut();
-            return;
-        }
-        
-        if (permiso.estadisticas) {
-            const s = permiso.estadisticas;
-            const usado = Number(s.dia.usadas) || 0;
-            const maximo = Math.max(1, Number(s.dia.maximo) || 0);
-            const pct = Math.min(100, Math.round((usado / maximo) * 100));
-            addLog(`Cupo hoy: ${s.dia.restantes} restantes (${usado}/${maximo} · ${pct}%)`, 'ok');
-        }
-        
-        addLog(`🪪 Evaluando RUT: ${rut}...`);
-        
-        // Continuar con la consulta
-        fetch(`${SERVER_BASE}/rut`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rut: rut, userId: userId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("📦 RESPUESTA COMPLETA:", data);
-            console.log("🖼️ screenshot existe?:", !!data.screenshot);
-            console.log("🖼️ screenshot_recortado existe?:", !!data.screenshot_recortado);
+        // ============================================================
+        // B) CONFIGURACIÓN DEL SERVIDOR
+        // ============================================================
+        const SERVER_BASE = 'https://botintegrar-production.up.railway.app';
 
-            if (data.ocr) {
-                addLog("OCR: " + (data.ocr.tieneAprobado ? "APROBADO" : "NO DETECTADO"), "info");
-                if (data.ocr.cupoDetectado) addLog("OCR Cupo: " + data.ocr.cupoDetectado, "ok");
-            }
 
-            let screenshot = data.screenshot_recortado || data.screenshot || null;
-            if (screenshot && screenshot.startsWith("data:image")) {
-                screenshot = screenshot.split(",")[1];
-            }
+        // ============================================================
+        // C) MANEJO DEL ID DE USUARIO (Custom modal — sin prompt() nativo)
+        // ============================================================
+        let _pendingCallback = null;
 
-            if (screenshot) {
-                console.log("🖼️ screenshot largo:", screenshot.length);
-            }
-
-            if (data.ok) {
-                const mensaje = data.mensaje || 'Evaluación completada';
-                const esAprobado = data.resultado === 'aprobado' || mensaje.includes('✅');
-                addLog(mensaje, esAprobado ? 'ok' : 'warn');
-                renderResult(
-                    esAprobado ? 'success' : 'warning',
-                    esAprobado ? 'RUT Aprobado' : 'RUT con Observaciones',
-                    mensaje,
-                    screenshot
-                );
+        /**
+         * Obtiene el userId guardado en localStorage.
+         * Si no existe, muestra el modal custom y llama al callback
+         * una vez que el usuario lo ingrese y confirme.
+         */
+        function obtenerUserId(callback) {
+            const userId = localStorage.getItem('freework_user_id');
+            if (userId) {
+                callback(userId);
             } else {
-                addLog(data.error || 'Error al evaluar RUT', 'err');
-                renderResult('error', 'Error', data.error || 'No se pudo evaluar el RUT');
+                _pendingCallback = callback;
+                document.getElementById('customPromptOverlay').classList.add('active');
+                document.getElementById('customPromptInput').focus();
             }
-            finalizarLoadingRut();
-        })
-        .catch(err => {
-            console.error("Error:", err);
-            addLog('Error de conexión con el servidor', 'err');
-            renderResult('error', 'Error de Conexión', 'El servidor local no respondió a la solicitud de RUT.');
-            finalizarLoadingRut();
+        }
+
+        /** Confirma el ID ingresado en el modal y ejecuta el callback pendiente */
+        function guardarCustomId() {
+            const val = document.getElementById('customPromptInput').value.trim();
+            if (!val) {
+                document.getElementById('customPromptInput').focus();
+                return;
+            }
+            localStorage.setItem('freework_user_id', val);
+            document.getElementById('customPromptOverlay').classList.remove('active');
+            document.getElementById('customPromptInput').value = '';
+            if (_pendingCallback) {
+                _pendingCallback(val);
+                _pendingCallback = null;
+            }
+        }
+
+        // Confirmar con Enter en el campo del prompt
+        document.getElementById('customPromptInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') guardarCustomId();
         });
-    }).catch(err => {
-        addLog(`❌ Error al verificar permisos: ${err.message}`, 'err');
-        finalizarLoadingRut();
-    });
-}
 
-function finalizarLoadingRut() {
-    rutSearchBtn.disabled = false;
-    rutSpinner.style.display = 'none';
-    document.querySelector('.btn-text-rut').style.display = 'inline';
-    loadingBar.style.display = 'none';
-    clearBtn.classList.add('active');
-}
 
-function renderResult(tipo, titulo, mensaje, screenshotBase64 = null) {
-    const iconos = { success: '✅', warning: '⚠️', error: '❌' };
-    resultCard.className = `result-card ${tipo}`;
-    resultIcon.textContent = iconos[tipo] || '❔';
-    resultTitle.textContent = titulo || (tipo === 'success' ? 'Disponible' : tipo === 'warning' ? 'Observación' : 'No Disponible');
-    resultBody.textContent = mensaje;
-    if (screenshotBase64) {
-        resultImg.src = `data:image/png;base64,${screenshotBase64}`;
-        resultImg.style.display = 'block';
-    } else {
-        resultImg.style.display = 'none';
-    }
-    resultSection.classList.add('active');
-}
+        // ============================================================
+        // D) VERIFICAR PERMISO EN EL SERVIDOR
+        // ============================================================
+        async function verificarPermisoWeb(userId) {
+            const res = await fetch(`${SERVER_BASE}/permisos/${userId}?accion=consultar`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return await res.json();
+        }
 
-function renderResult(tipo, titulo, mensaje, screenshotBase64 = null) {
-    const iconos = { success: '✅', warning: '⚠️', error: '❌' };
-    resultCard.className = `result-card ${tipo}`;
-    resultIcon.textContent = iconos[tipo] || '❔';
-    resultTitle.textContent = titulo || (tipo === 'success' ? 'Disponible' : tipo === 'warning' ? 'Observación' : 'No Disponible');
-    resultBody.textContent = mensaje;
-    if (screenshotBase64) {
-        resultImg.src = `data:image/png;base64,${screenshotBase64}`;
-        resultImg.style.display = 'block';
-    } else {
-        resultImg.style.display = 'none';
-    }
-    resultSection.classList.add('active');
-}
-</script>
+
+        // ============================================================
+        // E) ELEMENTOS DOM DE LA APP
+        // ============================================================
+        const panelDireccion = document.getElementById('panelDireccion');
+        const panelRut       = document.getElementById('panelRut');
+        const tabDireccion   = document.getElementById('tabDireccion');
+        const tabRut         = document.getElementById('tabRut');
+        const addressInput   = document.getElementById('addressInput');
+        const rutInput       = document.getElementById('rutInput');
+        const searchBtn      = document.getElementById('searchBtn');
+        const rutSearchBtn   = document.getElementById('rutSearchBtn');
+        const spinner        = document.getElementById('spinner');
+        const rutSpinner     = document.getElementById('rutSpinner');
+        const logSection     = document.getElementById('logSection');
+        const logStream      = document.getElementById('logStream');
+        const loadingBar     = document.getElementById('loadingBar');
+        const clearBtn       = document.getElementById('clearBtn');
+        const resultSection  = document.getElementById('resultSection');
+        const resultCard     = document.getElementById('resultCard');
+        const resultIcon     = document.getElementById('resultIcon');
+        const resultTitle    = document.getElementById('resultTitle');
+        const resultBody     = document.getElementById('resultBody');
+        const resultImg      = document.getElementById('resultImg');
+
+
+        // ============================================================
+        // F) LÓGICA DE INTERFAZ
+        // ============================================================
+        function cambiarModo(modo) {
+            if (modo === 'direccion') {
+                panelDireccion.style.display = 'flex';
+                panelRut.style.display = 'none';
+                tabDireccion.classList.add('active');
+                tabRut.classList.remove('active');
+            } else {
+                panelDireccion.style.display = 'none';
+                panelRut.style.display = 'flex';
+                tabDireccion.classList.remove('active');
+                tabRut.classList.add('active');
+            }
+            limpiarPantalla();
+        }
+
+        function addLog(texto, tipo = 'info') {
+            const item = document.createElement('div');
+            const cleanText = texto.replace(/\[.*?\]:?\s?/, '').replace(/^[✅⚠️❌]\s?/, '');
+            item.className = `status-item ${tipo}`;
+            item.innerHTML = `<i></i><span>${cleanText}</span>`;
+            logStream.appendChild(item);
+            logStream.scrollTop = logStream.scrollHeight;
+        }
+
+        function limpiarPantalla() {
+            addressInput.value = '';
+            rutInput.value = '';
+            logSection.classList.remove('active');
+            resultSection.classList.remove('active');
+            clearBtn.classList.remove('active');
+            logStream.innerHTML = '';
+            resultImg.style.display = 'none';
+            resultImg.src = '';
+        }
+
+        function renderResult(tipo, titulo, mensaje, screenshotBase64 = null) {
+            const iconos = { success: '✅', warning: '⚠️', error: '❌' };
+            resultCard.className = `result-card ${tipo}`;
+            resultIcon.textContent = iconos[tipo] || '❔';
+            resultTitle.textContent = titulo || (tipo === 'success' ? 'Disponible' : tipo === 'warning' ? 'Observación' : 'No Disponible');
+            resultBody.textContent = mensaje;
+            if (screenshotBase64) {
+                resultImg.src = `data:image/png;base64,${screenshotBase64}`;
+                resultImg.style.display = 'block';
+            } else {
+                resultImg.style.display = 'none';
+            }
+            resultSection.classList.add('active');
+        }
+
+
+        // ============================================================
+        // G) CONSULTA DIRECCIÓN (SSE)
+        // ============================================================
+        function iniciarConsulta() {
+            const direccion = addressInput.value.trim();
+            if (!direccion) return addressInput.focus();
+
+            // Pide ID (si no existe abre el modal; si ya existe llama directo al callback)
+            obtenerUserId((userId) => {
+                verificarPermisoWeb(userId).then(permiso => {
+                    if (!permiso.permitido) {
+                        logSection.classList.add('active');
+                        addLog(`Sin permiso: ${permiso.mensaje}`, 'err');
+                        if (permiso.estadisticas) {
+                            const s = permiso.estadisticas;
+                            renderResult('error', 'Sin acceso',
+                                `Cupo diario: ${s.dia.usadas}/${s.dia.maximo} usadas\n` +
+                                `Restantes hoy: ${s.dia.restantes}\n` +
+                                `Restantes esta semana: ${s.semana.restantes}`
+                            );
+                        }
+                        return;
+                    }
+                    if (permiso.estadisticas) {
+                        const s = permiso.estadisticas;
+                        const usado  = Number(s.dia.usadas)  || 0;
+                        const maximo = Math.max(1, Number(s.dia.maximo) || 0);
+                        const pct    = Math.min(100, Math.round((usado / maximo) * 100));
+                        logSection.classList.add('active');
+                        addLog(`Cupo hoy: ${s.dia.restantes} restantes (${usado}/${maximo} · ${pct}%)`, 'ok');
+                    }
+                    continuarConsulta(direccion, userId);
+                }).catch(err => {
+                    logSection.classList.add('active');
+                    addLog(`Error al verificar permisos: ${err.message}`, 'err');
+                });
+            });
+        }
+
+        function continuarConsulta(direccion, userId) {
+            searchBtn.disabled = true;
+            spinner.style.display = 'block';
+            document.querySelector('.btn-text').style.display = 'none';
+            logStream.innerHTML = '';
+            logSection.classList.add('active');
+            loadingBar.style.display = 'block';
+            resultSection.classList.remove('active');
+            clearBtn.classList.remove('active');
+
+            addLog(`Iniciando búsqueda para: ${direccion}`);
+
+            const url = `${SERVER_BASE}/verificar?direccion=${encodeURIComponent(direccion)}&userId=${encodeURIComponent(userId)}`;
+
+            fetch(`${SERVER_BASE}/health`, { signal: AbortSignal.timeout(3000) })
+                .then(() => {
+                    const evtSource = new EventSource(url);
+                    let mensajesAcumulados = [];
+
+                    evtSource.onmessage = (e) => {
+                        const payload = JSON.parse(e.data);
+
+                        if (payload.tipo === 'mensaje') {
+                            mensajesAcumulados.push(payload.texto);
+                            let tipo = 'info';
+                            if (payload.texto.includes('✅')) tipo = 'ok';
+                            if (payload.texto.includes('⚠️')) tipo = 'warn';
+                            if (payload.texto.includes('❌')) tipo = 'err';
+                            addLog(payload.texto, tipo);
+                        }
+
+                        if (payload.tipo === 'foto' && payload.base64) {
+                            renderResult('success', 'Factibilidad Confirmada', 'Se ha capturado la evidencia de cobertura.', payload.base64);
+                        }
+
+                        if (payload.tipo === 'fin') {
+                            const finalMsg  = mensajesAcumulados.join('\n');
+                            const tipoFinal = finalMsg.includes('✅') ? 'success' : (finalMsg.includes('⚠️') ? 'warning' : 'error');
+                            renderResult(tipoFinal, null, finalMsg);
+                            evtSource.close();
+                            finalizarLoading();
+                        }
+
+                        if (payload.tipo === 'error') {
+                            addLog(payload.texto, 'err');
+                            renderResult('error', 'Error del Sistema', payload.texto);
+                            evtSource.close();
+                            finalizarLoading();
+                        }
+                    };
+
+                    evtSource.onerror = () => {
+                        evtSource.close();
+                        finalizarLoading();
+                    };
+                })
+                .catch(() => {
+                    addLog('No se pudo establecer conexión con el bot.', 'err');
+                    renderResult('error', 'Error de Conexión', 'Asegúrate de que el servidor esté activo.');
+                    finalizarLoading();
+                });
+        }
+
+        function finalizarLoading() {
+            searchBtn.disabled = false;
+            spinner.style.display = 'none';
+            document.querySelector('.btn-text').style.display = 'inline';
+            loadingBar.style.display = 'none';
+            clearBtn.classList.add('active');
+        }
+
+
+        // ============================================================
+        // H) CONSULTA RUT (POST)
+        // ============================================================
+        function consultarRut() {
+            const rut = rutInput.value.trim();
+            if (!rut) return rutInput.focus();
+
+            // Pide ID (si no existe abre el modal; si ya existe llama directo al callback)
+            obtenerUserId((userId) => {
+                rutSearchBtn.disabled = true;
+                rutSpinner.style.display = 'block';
+                document.querySelector('.btn-text-rut').style.display = 'none';
+                logStream.innerHTML = '';
+                logSection.classList.add('active');
+                loadingBar.style.display = 'block';
+                resultSection.classList.remove('active');
+                clearBtn.classList.remove('active');
+
+                addLog(`Verificando permisos...`);
+
+                verificarPermisoWeb(userId).then(permiso => {
+                    if (!permiso.permitido) {
+                        addLog(`Sin permiso: ${permiso.mensaje}`, 'err');
+                        if (permiso.estadisticas) {
+                            const s = permiso.estadisticas;
+                            renderResult('error', 'Sin acceso',
+                                `Cupo diario: ${s.dia.usadas}/${s.dia.maximo} usadas\n` +
+                                `Restantes hoy: ${s.dia.restantes}\n` +
+                                `Restantes esta semana: ${s.semana.restantes}`
+                            );
+                        }
+                        finalizarLoadingRut();
+                        return;
+                    }
+
+                    if (permiso.estadisticas) {
+                        const s = permiso.estadisticas;
+                        const usado  = Number(s.dia.usadas)  || 0;
+                        const maximo = Math.max(1, Number(s.dia.maximo) || 0);
+                        const pct    = Math.min(100, Math.round((usado / maximo) * 100));
+                        addLog(`Cupo hoy: ${s.dia.restantes} restantes (${usado}/${maximo} · ${pct}%)`, 'ok');
+                    }
+
+                    addLog(`Evaluando RUT: ${rut}...`);
+
+                    fetch(`${SERVER_BASE}/rut`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rut, userId })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.ocr) {
+                            addLog('OCR: ' + (data.ocr.tieneAprobado ? 'APROBADO' : 'NO DETECTADO'), 'info');
+                            if (data.ocr.cupoDetectado) addLog('OCR Cupo: ' + data.ocr.cupoDetectado, 'ok');
+                        }
+
+                        let screenshot = data.screenshot_recortado || data.screenshot || null;
+                        if (screenshot && screenshot.startsWith('data:image')) {
+                            screenshot = screenshot.split(',')[1];
+                        }
+
+                        if (data.ok) {
+                            const mensaje    = data.mensaje || 'Evaluación completada';
+                            const esAprobado = data.resultado === 'aprobado' || mensaje.includes('✅');
+                            addLog(mensaje, esAprobado ? 'ok' : 'warn');
+                            renderResult(
+                                esAprobado ? 'success' : 'warning',
+                                esAprobado ? 'RUT Aprobado' : 'RUT con Observaciones',
+                                mensaje,
+                                screenshot
+                            );
+                        } else {
+                            addLog(data.error || 'Error al evaluar RUT', 'err');
+                            renderResult('error', 'Error', data.error || 'No se pudo evaluar el RUT');
+                        }
+                        finalizarLoadingRut();
+                    })
+                    .catch(err => {
+                        addLog('Error de conexión con el servidor', 'err');
+                        renderResult('error', 'Error de Conexión', 'El servidor no respondió a la solicitud.');
+                        finalizarLoadingRut();
+                    });
+
+                }).catch(err => {
+                    addLog(`Error al verificar permisos: ${err.message}`, 'err');
+                    finalizarLoadingRut();
+                });
+            });
+        }
+
+        function finalizarLoadingRut() {
+            rutSearchBtn.disabled = false;
+            rutSpinner.style.display = 'none';
+            document.querySelector('.btn-text-rut').style.display = 'inline';
+            loadingBar.style.display = 'none';
+            clearBtn.classList.add('active');
+        }
+
+    </script>
 </body>
 </html>
