@@ -1,0 +1,17 @@
+Dependencias (Docker las instalará desde cero)
+
+node_modules/
+
+Variables de entorno locales (se pasan en producción)
+
+.env
+
+Archivos de Git y configuraciones innecesarias en el contenedor
+
+.git/
+.github/
+.gitignore
+.dockerignore
+Dockerfile
+npm-debug.log
+README.md

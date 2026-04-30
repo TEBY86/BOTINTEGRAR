@@ -1,0 +1,38 @@
+FROM node:20-bookworm-slim
+RUN apt-get update && apt-get install -y \
+    chromium \
+    fonts-liberation \
+    libnss3 \
+    libx11-6 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxi6 \
+    libxtst6 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libxrandr2 \
+    libxss1 \
+    libgtk-3-0 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    NODE_ENV=production
+#   ↑ Se elimina API_CELULAR de aquí — se pasa al correr el contenedor
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev   # ← ESTO FALTABA — instala las dependencias
+COPY . .                
+
+EXPOSE 3001
+CMD ["sh", "-c", "node bot.js & node api-server.js"]
+
