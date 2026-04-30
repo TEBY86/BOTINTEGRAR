@@ -226,6 +226,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ ok: false, error: err.message });
 });
 
+
+
+// Servir frontend
+app.use(express.static(__dirname));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 // ─── INICIAR SERVIDOR ─────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 
